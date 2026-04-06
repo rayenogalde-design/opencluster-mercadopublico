@@ -185,9 +185,17 @@ Calcular Costo de Despacho
 
 <div class="results" id="res-logistica">
 <div class="card" style="border-left:3px solid var(--gold);">
-<div class="total-row" id="total-logistica">
-<span class="label">COSTO TOTAL DESPACHO</span>
+<div class="total-row" id="total-logistica" style="border-radius:10px 10px 0 0;">
+<span class="label">NETO</span>
 <span class="amount" id="total-logistica-val"></span>
+</div>
+<div style="background:rgba(0,26,96,.06);padding:10px 20px;display:flex;justify-content:space-between;align-items:center;font-family:'Montserrat',sans-serif;">
+<span style="font-size:.78rem;color:var(--muted);font-weight:600;">IVA (19%)</span>
+<span style="font-size:.95rem;font-weight:700;color:var(--text);" id="total-logistica-iva"></span>
+</div>
+<div style="background:linear-gradient(135deg,var(--gold),#a8863a);border-radius:0 0 10px 10px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;">
+<span style="color:rgba(255,255,255,.85);font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:700;">TOTAL CON IVA</span>
+<span style="color:#fff;font-family:'Montserrat',sans-serif;font-size:1.4rem;font-weight:700;" id="total-logistica-iva-val"></span>
 </div>
 <div style="text-align:center;margin-top:14px;">
 <button onclick="toggleDesglose()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:8px 20px;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--sky)';this.style.color='var(--navy)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'" id="btn-desglose">
@@ -390,7 +398,7 @@ if(retiroOn && urgente && isRM){
 const tbl=document.getElementById('tbl-logistica');
 tbl.innerHTML='';
 addRow(tbl,'Retiro urgente',fmt(retiroCost));
-document.getElementById('total-logistica-val').textContent=fmt(retiroCost);
+setTotales(retiroCost);
 document.getElementById('res-logistica').classList.add('show');
 return;
 }
@@ -423,8 +431,15 @@ addRow(tbl,'Sueldo conductor',fmt(salaryCost));
 addRow(tbl,'Viatico',fmt(viaticoCost));
 if(retiroCost>0) addRow(tbl,'Retiro en bodega',fmt(retiroCost));
 
-document.getElementById('total-logistica-val').textContent=fmt(total);
+setTotales(total);
 document.getElementById('res-logistica').classList.add('show');
+}
+
+function setTotales(neto){
+const iva=Math.round(neto*0.19);
+document.getElementById('total-logistica-val').textContent=fmt(neto);
+document.getElementById('total-logistica-iva').textContent=fmt(iva);
+document.getElementById('total-logistica-iva-val').textContent=fmt(neto+iva);
 }
 
 function addRow(tbl,label,val){
