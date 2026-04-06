@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>OpenCluster Tech — Calculadoras Mercado Publico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+--navy:#001a60;--sky:#06b3fd;--ltblue:#d6eeff;--pale:#eaf6ff;--orange:#ff7e00;--gold:#C9A96E;
+--bg:#F4F6FB;--white:#fff;--text:#1a1a2e;--muted:#5a6070;--border:#d0d8e8;--shadow:0 2px 12px rgba(0,26,96,.08);
+}
+body{font-family:'Open Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,var(--navy) 0%,#002a80 100%);padding:24px 20px 18px;text-align:center;position:relative;overflow:hidden;}
+.header::after{content:'';position:absolute;top:-40%;right:-10%;width:300px;height:300px;background:radial-gradient(circle,rgba(6,179,253,.12) 0%,transparent 70%);border-radius:50%;}
+.header h1{font-family:'Playfair Display',serif;color:var(--white);font-size:1.6rem;font-weight:700;letter-spacing:.5px;}
+.header .sub{font-family:'Montserrat',sans-serif;color:var(--sky);font-size:.82rem;margin-top:4px;font-weight:500;letter-spacing:1px;text-transform:uppercase;}
+
+/* TABS */
+.tab-bar{display:flex;background:var(--white);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.tab-btn{flex:1;padding:14px 8px;font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:600;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all .25s;position:relative;display:flex;align-items:center;justify-content:center;gap:8px;}
+.tab-btn:hover{color:var(--navy);background:var(--pale);}
+.tab-btn.active{color:var(--navy);background:var(--pale);}
+.tab-btn.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--sky);border-radius:3px 3px 0 0;}
+.tab-btn svg{width:18px;height:18px;flex-shrink:0;}
+
+/* CONTAINER */
+.container{max-width:720px;margin:0 auto;padding:20px 16px 40px;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* CARDS */
+.card{background:var(--white);border-radius:12px;padding:24px 20px;margin-bottom:16px;box-shadow:var(--shadow);border:1px solid rgba(0,26,96,.04);}
+.card-title{font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.card-title svg{width:22px;height:22px;color:var(--sky);}
+
+/* FORM */
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:.82rem;font-weight:600;color:var(--navy);margin-bottom:6px;font-family:'Montserrat',sans-serif;}
+.field input,.field select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'Open Sans',sans-serif;font-size:.9rem;color:var(--text);background:var(--white);transition:border .2s;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(6,179,253,.12);}
+.field .hint{font-size:.72rem;color:var(--muted);margin-top:3px;}
+
+/* TOGGLE */
+.toggle-group{display:flex;gap:4px;background:var(--pale);border-radius:8px;padding:3px;margin-bottom:8px;}
+.toggle-opt{flex:1;padding:8px 12px;border-radius:6px;border:none;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;}
+.toggle-opt.active{background:var(--white);color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+
+/* INLINE FIELDS */
+.inline-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:480px){.inline-fields{grid-template-columns:1fr;}}
+
+/* BUTTON */
+.btn-calc{width:100%;padding:14px;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-primary{background:linear-gradient(135deg,var(--sky),#0490d0);color:var(--white);box-shadow:0 4px 16px rgba(6,179,253,.3);}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(6,179,253,.4);}
+.btn-primary:active{transform:translateY(0);}
+.btn-primary svg{width:18px;height:18px;}
+
+/* RESULTS */
+.results{display:none;margin-top:16px;}
+.results.show{display:block;}
+.result-header{font-family:'Montserrat',sans-serif;font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.result-header svg{width:20px;height:20px;color:var(--gold);}
+.breakdown-table{width:100%;border-collapse:collapse;}
+.breakdown-table tr{border-bottom:1px solid var(--pale);}
+.breakdown-table tr:last-child{border-bottom:none;}
+.breakdown-table td{padding:8px 4px;font-size:.85rem;}
+.breakdown-table td:first-child{color:var(--muted);font-weight:500;}
+.breakdown-table td:last-child{text-align:right;font-weight:600;font-family:'Montserrat',sans-serif;color:var(--text);}
+.total-row{background:linear-gradient(135deg,var(--navy),#002a80);border-radius:10px;padding:16px 20px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;}
+.total-row .label{color:rgba(255,255,255,.8);font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:600;}
+.total-row .amount{color:var(--white);font-family:'Montserrat',sans-serif;font-size:1.4rem;font-weight:700;}
+
+/* TIC RESULT */
+.tic-result{text-align:center;padding:20px;}
+.tic-region{font-family:'Montserrat',sans-serif;font-size:.85rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.tic-neto{font-family:'Montserrat',sans-serif;font-size:2.2rem;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.tic-detail{font-size:.85rem;color:var(--muted);margin-bottom:4px;}
+.tic-total{font-family:'Montserrat',sans-serif;font-size:1.5rem;font-weight:700;color:var(--orange);margin-top:8px;}
+.tic-badge{display:inline-block;background:var(--pale);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:600;padding:4px 12px;border-radius:20px;margin-top:12px;letter-spacing:.5px;text-transform:uppercase;}
+.divider-line{width:60px;height:2px;background:var(--gold);margin:12px auto;}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+.header h1{font-size:1.25rem;}
+.tab-btn{font-size:.72rem;padding:10px 4px;}
+.container{padding:14px 10px 30px;}
+.card{padding:18px 14px;}
+.tic-neto{font-size:1.8rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>OpenCluster Tech</h1>
+<div class="sub">Calculadoras Mercado Publico</div>
+</div>
+
+<div class="tab-bar">
+<button class="tab-btn active" onclick="switchTab('logistica')" id="tab-logistica">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="22" height="12" rx="2"/><path d="M1 10h22"/><circle cx="7" cy="15" r="1"/><circle cx="17" cy="15" r="1"/></svg>
+Logistica Propia
+</button>
+<button class="tab-btn" onclick="switchTab('tic')" id="tab-tic">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+Transporte, Instalacion y Capacitacion — Salas Multisensoriales
+</button>
+</div>
+
+<div class="container">
+
+<!-- TAB 1: LOGISTICA PROPIA -->
+<div class="tab-content active" id="content-logistica">
+
+<div class="card">
+<div class="card-title">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+Retiro en Bodega
+</div>
+
+<div class="field">
+<label>Incluir retiro en bodega de proveedor</label>
+<div class="toggle-group" id="tg-retiro">
+<button class="toggle-opt active" onclick="setToggle('tg-retiro',0);toggleRetiro(false)">No</button>
+<button class="toggle-opt" onclick="setToggle('tg-retiro',1);toggleRetiro(true)">Si</button>
+</div>
+</div>
+
+<div id="retiro-opts" style="display:none;">
+<div class="field">
+<label>Tipo de retiro</label>
+<div class="toggle-group" id="tg-urgencia">
+<button class="toggle-opt active" onclick="setToggle('tg-urgencia',0)">Normal</button>
+<button class="toggle-opt" onclick="setToggle('tg-urgencia',1)">Urgente ($200.000)</button>
+</div>
+</div>
+<div class="field">
+<label>Cantidad de proveedores (1-4)</label>
+<input type="number" id="inp-proveedores" min="1" max="4" value="1">
+<div class="hint">$50.000 por cada proveedor (retiro normal)</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+Ruta y Destino
+</div>
+
+<div class="field">
+<label>Origen</label>
+<input type="text" value="Belloto (V Region)" disabled style="background:var(--pale);color:var(--navy);font-weight:600;">
+</div>
+
+<div class="field">
+<label>Ciudad de destino</label>
+<input type="text" id="inp-destino" list="dl-ciudades" placeholder="Escriba la ciudad de destino...">
+<datalist id="dl-ciudades"></datalist>
+<div class="hint">Seleccione de la lista o escriba manualmente</div>
+</div>
+
+<div class="field" id="km-manual-wrap" style="display:none;">
+<label>Distancia manual (km, solo ida)</label>
+<input type="number" id="inp-km-manual" min="1" placeholder="Ej: 500">
+<div class="hint">Ciudad no encontrada. Ingrese la distancia desde Belloto en km.</div>
+</div>
+
+<div class="inline-fields">
+<div class="field">
+<label>Precio diesel ($/L)</label>
+<input type="number" id="inp-diesel" value="1558" min="1">
+</div>
+<div class="field">
+<label>Rendimiento (km/L)</label>
+<input type="number" id="inp-rendimiento" value="5" min="1" step="0.5">
+</div>
+</div>
+</div>
+
+<button class="btn-calc btn-primary" onclick="calcLogistica()">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+Calcular Costo de Despacho
+</button>
+
+<div class="results" id="res-logistica">
+<div class="card" style="border-left:3px solid var(--gold);">
+<div class="result-header">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+Desglose de Costos
+</div>
+<table class="breakdown-table" id="tbl-logistica"></table>
+<div class="total-row" id="total-logistica">
+<span class="label">COSTO TOTAL</span>
+<span class="amount" id="total-logistica-val"></span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- TAB 2: TIC -->
+<div class="tab-content" id="content-tic">
+
+<div class="card">
+<div class="card-title">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+Sala Multisensorial - Costo TIC
+</div>
+
+<div class="field">
+<label>Region de destino</label>
+<select id="sel-region">
+<option value="">-- Seleccione una region --</option>
+</select>
+</div>
+
+<div class="field">
+<label>Tipo de valor</label>
+<div class="toggle-group" id="tg-iva">
+<button class="toggle-opt active" onclick="setToggle('tg-iva',0);calcTIC()">Neto</button>
+<button class="toggle-opt" onclick="setToggle('tg-iva',1);calcTIC()">Con IVA</button>
+</div>
+</div>
+</div>
+
+<div class="results" id="res-tic">
+<div class="card" style="border-left:3px solid var(--gold);">
+<div class="tic-result">
+<div class="tic-region" id="tic-region-name"></div>
+<div class="divider-line"></div>
+<div style="margin-top:12px;">
+<div style="font-size:.75rem;color:var(--muted);font-family:'Montserrat',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Valor Neto</div>
+<div class="tic-neto" id="tic-neto-val"></div>
+</div>
+<div class="tic-detail" id="tic-iva-line"></div>
+<div class="divider-line"></div>
+<div style="font-size:.75rem;color:var(--muted);font-family:'Montserrat',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;margin-top:12px;">Total con IVA</div>
+<div class="tic-total" id="tic-total-val"></div>
+<div class="tic-badge" id="tic-badge"></div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+
+<script>
+// ============ DATA ============
+const DISTANCIAS={
+"arica":2046,"putre":2182,"camarones":1945,"codpa":1980,"general lagos":2250,"visviri":2280,
+"iquique":1800,"alto hospicio":1795,"huara":1720,"pozo almonte":1710,"pica":1758,"colchane":1880,"camina":1740,"mamina":1750,
+"antofagasta":1360,"calama":1530,"tocopilla":1450,"mejillones":1340,"taltal":1180,"san pedro de atacama":1620,"sierra gorda":1470,"maria elena":1430,"ollague":1700,"baquedano":1400,
+"copiapo":870,"vallenar":750,"huasco":780,"caldera":890,"chanaral":960,"diego de almagro":1000,"tierra amarilla":860,"alto del carmen":810,"freirina":760,"los loros":850,"el salado":940,"el salvador":1020,"san felix":820,"domeyko":930,
+"la serena":480,"coquimbo":475,"ovalle":400,"illapel":300,"vicuna":520,"monte patria":430,"combarbala":380,"salamanca":320,"los vilos":240,"canela":330,"andacollo":500,"paihuano":530,"rio hurtado":440,"punitaqui":410,"tongoy":460,"la higuera":510,
+"valparaiso":30,"vina del mar":24,"quilpue":10,"villa alemana":5,"quillota":35,"san antonio":95,"los andes":75,"la ligua":90,"petorca":105,"cabildo":80,"limache":20,"olmue":25,"calera":42,"nogales":50,"hijuelas":40,"casablanca":45,"san felipe":70,"putaendo":80,"llaillay":55,"catemu":55,"rinconada":65,"santa maria":68,"calle larga":72,"belloto":0,"la cruz":38,"papudo":100,"zapallar":105,"puchuncavi":48,"quintero":45,"concon":20,"algarrobo":75,"el quisco":85,"el tabo":90,"cartagena":92,"santo domingo":98,"isla de pascua":3700,
+"santiago":110,"maipu":115,"puente alto":125,"la florida":120,"las condes":115,"san bernardo":120,"providencia":112,"nunoa":114,"vitacura":116,"lo barnechea":122,"quilicura":108,"renca":108,"cerrillos":114,"pedro aguirre cerda":116,"san miguel":116,"la cisterna":118,"el bosque":120,"la granja":118,"penalolen":117,"la reina":116,"macul":116,"san joaquin":116,"independencia":110,"recoleta":110,"huechuraba":108,"conchali":110,"cerro navia":112,"lo prado":113,"pudahuel":110,"estacion central":113,"quinta normal":111,"colina":100,"lampa":100,"til til":90,"buin":130,"paine":140,"talagante":118,"penaflor":115,"el monte":120,"isla de maipo":125,"melipilla":135,"san jose de maipo":140,"pirque":130,"calera de tango":122,
+"rancagua":178,"san fernando":225,"rengo":198,"machali":182,"pichilemu":248,"santa cruz":235,"chimbarongo":215,"san vicente":200,"peumo":210,"requinoa":190,"graneros":172,"mostazal":168,"codegua":180,"coinco":195,"olivar":185,"donihue":188,"coltauco":205,"las cabras":215,
+"talca":268,"curico":240,"linares":300,"cauquenes":330,"constitucion":310,"molina":248,"san clemente":280,"san javier":305,"parral":340,"longavi":315,"retiro":325,"villa alegre":308,"yerbas buenas":295,"colbun":290,"pelluhue":340,"licanten":280,"teno":235,"vichuquen":290,
+"chillan":395,"san carlos":410,"bulnes":400,"coihueco":415,"quirihue":380,"yungay":425,"el carmen":408,"san fabian":430,
+"concepcion":488,"los angeles":520,"talcahuano":495,"chiguayante":492,"san pedro de la paz":490,"coronel":498,"lota":505,"tome":500,"hualpen":493,"penco":497,"arauco":530,"lebu":545,"canete":540,"curanilahue":525,"nacimiento":530,"mulchen":540,"negrete":535,"santa barbara":548,"quilaco":555,"alto biobio":558,
+"temuco":630,"villarrica":690,"pucon":710,"angol":590,"victoria":610,"lautaro":620,"nueva imperial":645,"carahue":660,"pitrufquen":658,"freire":655,"padre las casas":632,"cunco":670,"loncoche":678,"gorbea":670,"tolten":700,"melipeuco":700,"lonquimay":738,
+"valdivia":835,"la union":870,"rio bueno":860,"panguipulli":850,"los lagos":880,"futrono":870,"lanco":840,"mariquina":838,"mafil":845,
+"puerto montt":1010,"osorno":930,"castro":1150,"ancud":1100,"puerto varas":1000,"frutillar":980,"llanquihue":995,"calbuco":1020,"maullin":1050,"los muermos":1040,"fresia":960,"purranque":950,"rio negro":945,"chonchi":1170,"dalcahue":1130,"queilen":1200,"quellon":1240,"chaiten":1200,"hualaihue":1080,"cochamo":1050,"palena":1350,
+"coyhaique":1650,"puerto aysen":1680,"chile chico":1800,"cochrane":1850,"cisnes":1550,"lago verde":1700,"ohiggins":1980,
+"punta arenas":3100,"puerto natales":2950,"porvenir":3150,"cabo de hornos":3400,"puerto williams":3400
+};
+
+const PEAJES={
+"valparaiso":500,"vina del mar":500,"quilpue":0,"villa alemana":0,"quillota":600,"limache":0,"olmue":0,"calera":600,"nogales":1200,"hijuelas":600,"san felipe":1800,"putaendo":1800,"llaillay":1200,"catemu":1200,"rinconada":1800,"santa maria":1800,"calle larga":1800,"la cruz":600,"papudo":1500,"zapallar":1500,"puchuncavi":800,"quintero":800,"concon":500,"casablanca":1200,"belloto":0,
+"santiago":8200,"maipu":8200,"puente alto":8400,"la florida":8400,"las condes":8200,"san bernardo":8400,"providencia":8200,"nunoa":8200,"vitacura":8200,"lo barnechea":8400,"quilicura":8200,"renca":8200,"cerrillos":8200,"pedro aguirre cerda":8200,"san miguel":8200,"la cisterna":8400,"el bosque":8400,"la granja":8400,"penalolen":8400,"la reina":8200,"macul":8200,"san joaquin":8200,"independencia":8200,"recoleta":8200,"huechuraba":8200,"conchali":8200,"cerro navia":8200,"lo prado":8200,"pudahuel":8200,"estacion central":8200,"quinta normal":8200,"colina":8400,"lampa":8400,"til til":6200,"buin":10400,"paine":10400,"talagante":8200,"penaflor":8200,"el monte":8200,"isla de maipo":8400,"melipilla":8400,"san jose de maipo":8400,"pirque":8400,"calera de tango":8400,
+"los andes":4200,"san antonio":6200,"la ligua":2900,"petorca":2900,"cabildo":2900,"algarrobo":4200,"el quisco":4800,"el tabo":4800,"cartagena":5000,"santo domingo":5200,
+"los vilos":14400,"illapel":16000,"ovalle":22000,"la serena":26400,"coquimbo":26400,"vicuna":26800,"monte patria":24000,"combarbala":20000,"salamanca":17600,"canela":20000,"andacollo":26600,"paihuano":27000,"rio hurtado":24000,"punitaqui":23000,"tongoy":26200,"la higuera":27000,
+"copiapo":38000,"vallenar":34000,"huasco":35000,"caldera":39000,"chanaral":42000,"diego de almagro":44000,"tierra amarilla":38000,"alto del carmen":35000,"freirina":34200,"los loros":37000,"el salado":41000,"el salvador":44000,"san felix":36000,"domeyko":40000,
+"antofagasta":56000,"calama":60000,"tocopilla":58000,"mejillones":56000,"taltal":52000,"san pedro de atacama":62000,"sierra gorda":58000,"maria elena":57000,"ollague":64000,"baquedano":57000,
+"iquique":66000,"alto hospicio":66000,"huara":64000,"pozo almonte":64000,"pica":65000,"colchane":68000,"camina":65000,"mamina":65000,
+"arica":72000,"putre":74000,"camarones":71000,"codpa":72000,"general lagos":76000,"visviri":76000,
+"rancagua":17000,"san fernando":20000,"rengo":18000,"machali":17000,"pichilemu":22000,"santa cruz":21000,"chimbarongo":20000,"san vicente":19000,"peumo":19000,"requinoa":18000,"graneros":16800,"mostazal":16400,"codegua":17000,"coinco":18000,"olivar":17000,"donihue":17500,"coltauco":19000,"las cabras":20000,
+"talca":28000,"curico":25000,"linares":30000,"cauquenes":32000,"constitucion":30000,"molina":26000,"san clemente":29000,"san javier":30000,"parral":34000,"longavi":31000,"retiro":32000,"villa alegre":30000,"yerbas buenas":29000,"colbun":29000,"pelluhue":33000,"licanten":28000,"teno":25000,"vichuquen":29000,
+"chillan":38000,"san carlos":40000,"bulnes":38000,"coihueco":40000,"quirihue":37000,"yungay":42000,"el carmen":39000,"san fabian":42000,
+"concepcion":48000,"los angeles":50000,"talcahuano":48000,"chiguayante":48000,"san pedro de la paz":48000,"coronel":49000,"lota":49000,"tome":49000,"hualpen":48000,"penco":48000,"arauco":52000,"lebu":54000,"canete":53000,"curanilahue":52000,"nacimiento":51000,"mulchen":52000,"negrete":52000,"santa barbara":53000,"quilaco":54000,"alto biobio":55000,
+"temuco":60000,"villarrica":65000,"pucon":66000,"angol":58000,"victoria":59000,"lautaro":60000,"nueva imperial":62000,"carahue":63000,"pitrufquen":63000,"freire":63000,"padre las casas":60000,"cunco":64000,"loncoche":64000,"gorbea":64000,"tolten":66000,"melipeuco":66000,"lonquimay":70000,
+"valdivia":76000,"la union":80000,"rio bueno":78000,"panguipulli":78000,"los lagos":80000,"futrono":80000,"lanco":76000,"mariquina":76000,"mafil":76000,
+"puerto montt":92000,"osorno":86000,"castro":96000,"ancud":94000,"puerto varas":92000,"frutillar":90000,"llanquihue":91000,"calbuco":92000,"maullin":93000,"los muermos":92000,"fresia":88000,"purranque":87000,"rio negro":86000,"chonchi":98000,"dalcahue":96000,"queilen":100000,"quellon":104000,"chaiten":96000,"hualaihue":94000,"cochamo":92000,"palena":100000,
+"coyhaique":92000,"puerto aysen":92000,"chile chico":92000,"cochrane":92000,"cisnes":92000,"lago verde":92000,"ohiggins":92000,
+"punta arenas":92000,"puerto natales":92000,"porvenir":92000,"cabo de hornos":92000,"puerto williams":92000
+};
+
+const QUINTA=["valparaiso","vina del mar","quilpue","villa alemana","quillota","san antonio","los andes","la ligua","petorca","cabildo","limache","olmue","calera","nogales","hijuelas","casablanca","san felipe","putaendo","llaillay","catemu","rinconada","santa maria","calle larga","belloto"];
+
+const RM=["santiago","maipu","puente alto","la florida","las condes","san bernardo","providencia","nunoa","vitacura","lo barnechea","quilicura","renca","cerrillos","pedro aguirre cerda","san miguel","la cisterna","el bosque","la granja","penalolen","la reina","macul","san joaquin","independencia","recoleta","huechuraba","conchali","cerro navia","lo prado","pudahuel","estacion central","quinta normal","colina","lampa","til til","buin","paine","talagante","penaflor","el monte","isla de maipo","melipilla","san jose de maipo","pirque","calera de tango"];
+
+const SALA_COSTOS={"Arica y Parinacota":3401000,"Tarapaca":3249000,"Antofagasta":3065000,"Atacama":2044901,"Coquimbo":1605000,"Valparaiso":1163000,"Metropolitana":1209000,"O'Higgins":1465000,"Maule":1593000,"Nuble":1921000,"Biobio":2145000,"Araucania":2165000,"Los Rios":2593000,"Los Lagos":2785000,"Aysen":2765000,"Magallanes":2825000};
+
+const ALOJ=42050, SUELDO=50420, VIATICO=30000, VIATICO_V5=10000;
+const RETIRO_URGENTE=200000, RETIRO_NORMAL=50000;
+
+// ============ HELPERS ============
+function normCity(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();}
+function fmt(n){return "$"+Math.round(n).toLocaleString("es-CL");}
+function fmtKm(n){return Math.round(n).toLocaleString("es-CL")+" km";}
+
+// ============ TABS ============
+function switchTab(id){
+document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+document.getElementById('tab-'+id).classList.add('active');
+document.getElementById('content-'+id).classList.add('active');
+}
+
+// ============ TOGGLES ============
+function setToggle(groupId,idx){
+const btns=document.getElementById(groupId).querySelectorAll('.toggle-opt');
+btns.forEach((b,i)=>{b.classList.toggle('active',i===idx);});
+}
+function getToggle(groupId){
+const btns=document.getElementById(groupId).querySelectorAll('.toggle-opt');
+for(let i=0;i<btns.length;i++) if(btns[i].classList.contains('active')) return i;
+return 0;
+}
+
+function toggleRetiro(show){
+document.getElementById('retiro-opts').style.display=show?'block':'none';
+}
+
+// ============ DATALIST ============
+(function(){
+const dl=document.getElementById('dl-ciudades');
+const seen=new Set();
+Object.keys(DISTANCIAS).sort().forEach(c=>{
+const cap=c.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+if(!seen.has(cap)){seen.add(cap);const o=document.createElement('option');o.value=cap;dl.appendChild(o);}
+});
+})();
+
+// Detect city not found
+document.getElementById('inp-destino').addEventListener('input',function(){
+const nc=normCity(this.value);
+const found=DISTANCIAS[nc]!==undefined;
+document.getElementById('km-manual-wrap').style.display=(!found&&this.value.length>2)?'block':'none';
+});
+
+// ============ REGION SELECT ============
+(function(){
+const sel=document.getElementById('sel-region');
+Object.keys(SALA_COSTOS).forEach(r=>{
+const o=document.createElement('option');o.value=r;o.textContent=r;sel.appendChild(o);
+});
+sel.addEventListener('change',calcTIC);
+})();
+
+// ============ CALC LOGISTICA ============
+function calcLogistica(){
+const retiroOn=getToggle('tg-retiro')===1;
+const urgente=getToggle('tg-urgencia')===1;
+const proveedores=Math.min(4,Math.max(1,parseInt(document.getElementById('inp-proveedores').value)||1));
+const destRaw=document.getElementById('inp-destino').value;
+const destNorm=normCity(destRaw);
+const diesel=parseFloat(document.getElementById('inp-diesel').value)||1558;
+const rendimiento=parseFloat(document.getElementById('inp-rendimiento').value)||5;
+
+let distancia=DISTANCIAS[destNorm];
+if(distancia===undefined){
+distancia=parseFloat(document.getElementById('inp-km-manual').value);
+if(!distancia||distancia<=0){alert('Ingrese una ciudad valida o la distancia manual en km.');return;}
+}
+
+const isRM=RM.includes(destNorm);
+const isQuinta=QUINTA.includes(destNorm);
+
+// Retiro cost
+let retiroCost=0;
+if(retiroOn){
+if(urgente) retiroCost=RETIRO_URGENTE;
+else retiroCost=RETIRO_NORMAL*proveedores;
+}
+
+// Special case: urgente retiro AND destination is Santiago/RM -> only retiro, no dispatch
+if(retiroOn && urgente && isRM){
+const tbl=document.getElementById('tbl-logistica');
+tbl.innerHTML='';
+addRow(tbl,'Retiro urgente en RM',fmt(retiroCost));
+addRow(tbl,'Despacho','No aplica (retiro urgente en RM)');
+document.getElementById('total-logistica-val').textContent=fmt(retiroCost);
+document.getElementById('res-logistica').classList.add('show');
+return;
+}
+
+const roundTrip=distancia*2;
+const days=Math.ceil(roundTrip/500);
+const nights=Math.max(0,days-1);
+const fuelCost=(roundTrip/rendimiento)*diesel;
+const peajeIda=PEAJES[destNorm]||0;
+const tollCost=peajeIda*2;
+const alojCost=nights>0?ALOJ*nights:0;
+const salaryCost=SUELDO*days;
+
+let viaticoCost=0;
+const drivers=1;
+if(!isQuinta && !isRM){
+viaticoCost=VIATICO*days*drivers;
+} else {
+viaticoCost=VIATICO_V5*drivers;
+}
+
+const subtotalDespacho=fuelCost+tollCost+alojCost+salaryCost+viaticoCost;
+const total=subtotalDespacho+retiroCost;
+
+// Build table
+const tbl=document.getElementById('tbl-logistica');
+tbl.innerHTML='';
+addRow(tbl,'Destino',destRaw||destNorm);
+addRow(tbl,'Distancia ida',fmtKm(distancia));
+addRow(tbl,'Ida y vuelta',fmtKm(roundTrip));
+addRow(tbl,'Dias en ruta',days);
+addRow(tbl,'Noches',nights);
+tbl.innerHTML+='<tr><td colspan="2" style="height:8px;border:none;"></td></tr>';
+addRow(tbl,'Combustible',fmt(fuelCost));
+addRow(tbl,'Peajes (ida y vuelta)',fmt(tollCost));
+if(alojCost>0) addRow(tbl,'Alojamiento ('+nights+' noche'+(nights>1?'s':'')+')',fmt(alojCost));
+addRow(tbl,'Sueldo conductor ('+days+' dia'+(days>1?'s':'')+')',fmt(salaryCost));
+addRow(tbl,'Viatico'+(isQuinta||isRM?' (V Region/RM)':' (fuera V Region)'),fmt(viaticoCost));
+if(retiroCost>0){
+tbl.innerHTML+='<tr><td colspan="2" style="height:8px;border:none;"></td></tr>';
+addRow(tbl,'Retiro '+(urgente?'urgente':'normal ('+proveedores+' prov.)'),fmt(retiroCost));
+}
+
+document.getElementById('total-logistica-val').textContent=fmt(total);
+document.getElementById('res-logistica').classList.add('show');
+}
+
+function addRow(tbl,label,val){
+const tr=document.createElement('tr');
+tr.innerHTML='<td>'+label+'</td><td>'+val+'</td>';
+tbl.appendChild(tr);
+}
+
+// ============ CALC TIC ============
+function calcTIC(){
+const region=document.getElementById('sel-region').value;
+if(!region){document.getElementById('res-tic').classList.remove('show');return;}
+const neto=SALA_COSTOS[region];
+const iva=Math.round(neto*0.19);
+const total=neto+iva;
+const showIva=getToggle('tg-iva')===1;
+
+document.getElementById('tic-region-name').textContent=region;
+document.getElementById('tic-neto-val').textContent=fmt(neto);
+document.getElementById('tic-iva-line').textContent='IVA (19%): '+fmt(iva);
+document.getElementById('tic-total-val').textContent=fmt(total);
+document.getElementById('tic-badge').textContent=showIva?'Mostrando valor con IVA':'Mostrando valor neto';
+document.getElementById('res-tic').classList.add('show');
+}
+</script>
+</body>
+</html>
