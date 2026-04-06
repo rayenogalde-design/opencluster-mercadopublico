@@ -176,16 +176,6 @@ Ruta y Destino
 <div class="hint">Ciudad no encontrada. Ingrese la distancia desde Belloto en km.</div>
 </div>
 
-<div class="inline-fields">
-<div class="field">
-<label>Precio diesel ($/L)</label>
-<input type="number" id="inp-diesel" value="1558" min="1">
-</div>
-<div class="field">
-<label>Rendimiento (km/L)</label>
-<input type="number" id="inp-rendimiento" value="5" min="1" step="0.5">
-</div>
-</div>
 </div>
 
 <button class="btn-calc btn-primary" onclick="calcLogistica()">
@@ -195,14 +185,17 @@ Calcular Costo de Despacho
 
 <div class="results" id="res-logistica">
 <div class="card" style="border-left:3px solid var(--gold);">
-<div class="result-header">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-Desglose de Costos
-</div>
-<table class="breakdown-table" id="tbl-logistica"></table>
 <div class="total-row" id="total-logistica">
-<span class="label">COSTO TOTAL</span>
+<span class="label">COSTO TOTAL DESPACHO</span>
 <span class="amount" id="total-logistica-val"></span>
+</div>
+<div style="text-align:center;margin-top:14px;">
+<button onclick="toggleDesglose()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:8px 20px;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--sky)';this.style.color='var(--navy)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'" id="btn-desglose">
+Ver desglose
+</button>
+</div>
+<div id="desglose-wrap" style="display:none;margin-top:14px;">
+<table class="breakdown-table" id="tbl-logistica"></table>
 </div>
 </div>
 </div>
@@ -303,6 +296,7 @@ const SALA_COSTOS={"Arica y Parinacota":3401000,"Tarapaca":3249000,"Antofagasta"
 
 const ALOJ=42050, SUELDO=50420, VIATICO=30000, VIATICO_V5=10000;
 const RETIRO_URGENTE=200000, RETIRO_NORMAL=50000;
+const DIESEL=1560, RENDIMIENTO=5.5;
 
 // ============ HELPERS ============
 function normCity(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();}
@@ -330,6 +324,13 @@ return 0;
 
 function toggleRetiro(show){
 document.getElementById('retiro-opts').style.display=show?'block':'none';
+}
+function toggleDesglose(){
+const w=document.getElementById('desglose-wrap');
+const btn=document.getElementById('btn-desglose');
+const open=w.style.display!=='none';
+w.style.display=open?'none':'block';
+btn.textContent=open?'Ver desglose':'Ocultar desglose';
 }
 
 // ============ DATALIST ============
@@ -365,8 +366,6 @@ const urgente=getToggle('tg-urgencia')===1;
 const proveedores=Math.min(4,Math.max(1,parseInt(document.getElementById('inp-proveedores').value)||1));
 const destRaw=document.getElementById('inp-destino').value;
 const destNorm=normCity(destRaw);
-const diesel=parseFloat(document.getElementById('inp-diesel').value)||1558;
-const rendimiento=parseFloat(document.getElementById('inp-rendimiento').value)||5;
 
 let distancia=DISTANCIAS[destNorm];
 if(distancia===undefined){
@@ -377,19 +376,20 @@ if(!distancia||distancia<=0){alert('Ingrese una ciudad valida o la distancia man
 const isRM=RM.includes(destNorm);
 const isQuinta=QUINTA.includes(destNorm);
 
-// Retiro cost
 let retiroCost=0;
 if(retiroOn){
 if(urgente) retiroCost=RETIRO_URGENTE;
 else retiroCost=RETIRO_NORMAL*proveedores;
 }
 
-// Special case: urgente retiro AND destination is Santiago/RM -> only retiro, no dispatch
+// Ocultar desglose al recalcular
+document.getElementById('desglose-wrap').style.display='none';
+document.getElementById('btn-desglose').textContent='Ver desglose';
+
 if(retiroOn && urgente && isRM){
 const tbl=document.getElementById('tbl-logistica');
 tbl.innerHTML='';
-addRow(tbl,'Retiro urgente en RM',fmt(retiroCost));
-addRow(tbl,'Despacho','No aplica (retiro urgente en RM)');
+addRow(tbl,'Retiro urgente',fmt(retiroCost));
 document.getElementById('total-logistica-val').textContent=fmt(retiroCost);
 document.getElementById('res-logistica').classList.add('show');
 return;
@@ -398,41 +398,30 @@ return;
 const roundTrip=distancia*2;
 const days=Math.ceil(roundTrip/500);
 const nights=Math.max(0,days-1);
-const fuelCost=(roundTrip/rendimiento)*diesel;
+const fuelCost=(roundTrip/RENDIMIENTO)*DIESEL;
 const peajeIda=PEAJES[destNorm]||0;
 const tollCost=peajeIda*2;
 const alojCost=nights>0?ALOJ*nights:0;
 const salaryCost=SUELDO*days;
 
 let viaticoCost=0;
-const drivers=1;
 if(!isQuinta && !isRM){
-viaticoCost=VIATICO*days*drivers;
+viaticoCost=VIATICO*days;
 } else {
-viaticoCost=VIATICO_V5*drivers;
+viaticoCost=VIATICO_V5;
 }
 
-const subtotalDespacho=fuelCost+tollCost+alojCost+salaryCost+viaticoCost;
-const total=subtotalDespacho+retiroCost;
+const total=fuelCost+tollCost+alojCost+salaryCost+viaticoCost+retiroCost;
 
-// Build table
+// Build simplified desglose
 const tbl=document.getElementById('tbl-logistica');
 tbl.innerHTML='';
-addRow(tbl,'Destino',destRaw||destNorm);
-addRow(tbl,'Distancia ida',fmtKm(distancia));
-addRow(tbl,'Ida y vuelta',fmtKm(roundTrip));
-addRow(tbl,'Dias en ruta',days);
-addRow(tbl,'Noches',nights);
-tbl.innerHTML+='<tr><td colspan="2" style="height:8px;border:none;"></td></tr>';
 addRow(tbl,'Combustible',fmt(fuelCost));
-addRow(tbl,'Peajes (ida y vuelta)',fmt(tollCost));
-if(alojCost>0) addRow(tbl,'Alojamiento ('+nights+' noche'+(nights>1?'s':'')+')',fmt(alojCost));
-addRow(tbl,'Sueldo conductor ('+days+' dia'+(days>1?'s':'')+')',fmt(salaryCost));
-addRow(tbl,'Viatico'+(isQuinta||isRM?' (V Region/RM)':' (fuera V Region)'),fmt(viaticoCost));
-if(retiroCost>0){
-tbl.innerHTML+='<tr><td colspan="2" style="height:8px;border:none;"></td></tr>';
-addRow(tbl,'Retiro '+(urgente?'urgente':'normal ('+proveedores+' prov.)'),fmt(retiroCost));
-}
+addRow(tbl,'Peajes',fmt(tollCost));
+if(alojCost>0) addRow(tbl,'Alojamiento',fmt(alojCost));
+addRow(tbl,'Sueldo conductor',fmt(salaryCost));
+addRow(tbl,'Viatico',fmt(viaticoCost));
+if(retiroCost>0) addRow(tbl,'Retiro en bodega',fmt(retiroCost));
 
 document.getElementById('total-logistica-val').textContent=fmt(total);
 document.getElementById('res-logistica').classList.add('show');
