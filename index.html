@@ -147,7 +147,19 @@ Retiro en Bodega
 <div class="field">
 <label>Cantidad de proveedores (1-4)</label>
 <input type="number" id="inp-proveedores" min="1" max="4" value="1">
-<div class="hint">$50.000 por cada proveedor (retiro normal)</div>
+<div class="hint">$50.000 por cada proveedor + $50.000 despacho RM (si destino es Santiago)</div>
+</div>
+</div>
+
+<!-- Despacho urgente Santiago (solo si NO hay retiro y destino es RM) -->
+<div id="despacho-stgo-opts" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
+<div class="field">
+<label>¿Es despacho urgente a Santiago?</label>
+<div class="toggle-group" id="tg-desp-urgente">
+<button class="toggle-opt active" onclick="setToggle('tg-desp-urgente',0);calcLogistica()">Normal</button>
+<button class="toggle-opt" onclick="setToggle('tg-desp-urgente',1);calcLogistica()">Urgente ($200.000)</button>
+</div>
+<div class="hint">Si es urgente: costo fijo $200.000. Si es normal: cálculo tradicional.</div>
 </div>
 </div>
 </div>
@@ -304,7 +316,7 @@ const SALA_COSTOS={"Arica y Parinacota":3401000,"Tarapaca":3249000,"Antofagasta"
 
 const ALOJ=42050, SUELDO=50420, VIATICO=30000, VIATICO_V5=10000;
 const RETIRO_URGENTE=200000, RETIRO_NORMAL=50000;
-const DIESEL=1560, RENDIMIENTO=5.5;
+const DIESEL=1309, RENDIMIENTO=5.5;
 
 // ============ HELPERS ============
 function normCity(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();}
@@ -332,6 +344,15 @@ return 0;
 
 function toggleRetiro(show){
 document.getElementById('retiro-opts').style.display=show?'block':'none';
+actualizarPanelDespachoStgo();
+}
+
+function actualizarPanelDespachoStgo(){
+const retiroOn=getToggle('tg-retiro')===1;
+const destRaw=document.getElementById('inp-destino').value;
+const isRM=RM.includes(normCity(destRaw));
+const show=!retiroOn && isRM;
+document.getElementById('despacho-stgo-opts').style.display=show?'block':'none';
 }
 function toggleDesglose(){
 const w=document.getElementById('desglose-wrap');
@@ -341,14 +362,37 @@ w.style.display=open?'none':'block';
 btn.textContent=open?'Ver desglose':'Ocultar desglose';
 }
 
-// ============ DATALIST ============
+// ============ DATALIST — 346 comunas oficiales de Chile (INE) ============
+const COMUNAS_CHILE=[
+"Arica","Camarones","General Lagos","Putre",
+"Alto Hospicio","Camiña","Colchane","Huara","Iquique","Pica","Pozo Almonte",
+"Antofagasta","Calama","María Elena","Mejillones","Ollagüe","San Pedro de Atacama","Sierra Gorda","Taltal","Tocopilla",
+"Alto del Carmen","Caldera","Chañaral","Copiapó","Diego de Almagro","Freirina","Huasco","Tierra Amarilla","Vallenar",
+"Andacollo","Canela","Combarbalá","Coquimbo","Illapel","La Higuera","La Serena","Los Vilos","Monte Patria","Ovalle","Paiguano","Punitaqui","Río Hurtado","Salamanca","Vicuña",
+"Algarrobo","Cabildo","Calera","Calle Larga","Cartagena","Casablanca","Catemu","Concón","El Quisco","El Tabo","Hijuelas","Isla de Pascua","Juan Fernández","La Cruz","La Ligua","Limache","Llaillay","Los Andes","Nogales","Olmué","Panquehue","Papudo","Petorca","Puchuncaví","Putaendo","Quillota","Quilpué","Quintero","Rinconada","San Antonio","San Esteban","San Felipe","Santa María","Santo Domingo","Valparaíso","Villa Alemana","Viña del Mar","Zapallar",
+"Alhué","Buin","Calera de Tango","Cerrillos","Cerro Navia","Colina","Conchalí","Curacaví","El Bosque","El Monte","Estación Central","Huechuraba","Independencia","Isla de Maipo","La Cisterna","La Florida","La Granja","La Pintana","La Reina","Lampa","Las Condes","Lo Barnechea","Lo Espejo","Lo Prado","Macul","Maipú","María Pinto","Melipilla","Ñuñoa","Padre Hurtado","Paine","Pedro Aguirre Cerda","Peñaflor","Peñalolén","Pirque","Providencia","Pudahuel","Puente Alto","Quilicura","Quinta Normal","Recoleta","Renca","San Bernardo","San Joaquín","San José de Maipo","San Miguel","San Pedro","San Ramón","Santiago","Talagante","Tiltil","Vitacura",
+"Chimbarongo","Chépica","Codegua","Coinco","Coltauco","Doñihue","Graneros","La Estrella","Las Cabras","Litueche","Lolol","Machalí","Malloa","Marchihue","Mostazal","Nancagua","Navidad","Olivar","Palmilla","Paredones","Peralillo","Peumo","Pichidegua","Pichilemu","Placilla","Pumanque","Quinta de Tilcoco","Rancagua","Rengo","Requínoa","San Fernando","San Vicente","Santa Cruz",
+"Cauquenes","Chanco","Colbún","Constitución","Curepto","Curicó","Empedrado","Hualañé","Licantén","Linares","Longaví","Maule","Molina","Parral","Pelarco","Pelluhue","Pencahue","Rauco","Retiro","Río Claro","Romeral","Sagrada Familia","San Clemente","San Javier","San Rafael","Talca","Teno","Vichuquén","Villa Alegre","Yerbas Buenas",
+"Bulnes","Chillán","Chillán Viejo","Cobquecura","Coelemu","Coihueco","El Carmen","Ninhue","Ñiquén","Pemuco","Pinto","Portezuelo","Quillón","Quirihue","Ránquil","San Carlos","San Fabián","San Ignacio","San Nicolás","Treguaco","Yungay",
+"Alto Biobío","Antuco","Arauco","Cabrero","Cañete","Chiguayante","Concepción","Contulmo","Coronel","Curanilahue","Florida","Hualpén","Hualqui","Laja","Lebu","Los Álamos","Los Ángeles","Lota","Mulchén","Nacimiento","Negrete","Penco","Quilaco","Quilleco","San Pedro de la Paz","San Rosendo","Santa Bárbara","Santa Juana","Talcahuano","Tirúa","Tomé","Tucapel","Yumbel",
+"Angol","Carahue","Cholchol","Collipulli","Cunco","Curacautín","Curarrehue","Ercilla","Freire","Galvarino","Gorbea","Lautaro","Loncoche","Lonquimay","Los Sauces","Lumaco","Melipeuco","Nueva Imperial","Padre Las Casas","Perquenco","Pitrufquén","Pucón","Purén","Renaico","Saavedra","Temuco","Teodoro Schmidt","Toltén","Traiguén","Victoria","Vilcún","Villarrica",
+"Corral","Futrono","La Unión","Lago Ranco","Lanco","Los Lagos","Máfil","Mariquina","Paillaco","Panguipulli","Río Bueno","Valdivia",
+"Ancud","Calbuco","Castro","Chaitén","Chonchi","Cochamó","Curaco de Vélez","Dalcahue","Fresia","Frutillar","Futaleufú","Hualaihué","Llanquihue","Los Muermos","Maullín","Osorno","Palena","Puerto Montt","Puerto Octay","Puerto Varas","Puqueldón","Purranque","Puyehue","Queilén","Quellón","Quemchi","Quinchao","Río Negro","San Juan de la Costa","San Pablo",
+"Aysén","Chile Chico","Cisnes","Cochrane","Coyhaique","Guaitecas","Lago Verde","O'Higgins","Río Ibáñez","Tortel",
+"Antártica","Cabo de Hornos","Laguna Blanca","Natales","Porvenir","Primavera","Punta Arenas","Río Verde","San Gregorio","Timaukel","Torres del Paine"
+];
 (function(){
 const dl=document.getElementById('dl-ciudades');
 const seen=new Set();
-Object.keys(DISTANCIAS).sort().forEach(c=>{
+const out=[];
+function agregar(nombre){const k=nombre.toLowerCase();if(seen.has(k))return;seen.add(k);out.push(nombre);}
+COMUNAS_CHILE.forEach(agregar);
+Object.keys(DISTANCIAS).forEach(c=>{
 const cap=c.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-if(!seen.has(cap)){seen.add(cap);const o=document.createElement('option');o.value=cap;dl.appendChild(o);}
+agregar(cap);
 });
+out.sort((a,b)=>a.localeCompare(b,'es'));
+out.forEach(c=>{const o=document.createElement('option');o.value=c;dl.appendChild(o);});
 })();
 
 // Detect city not found
@@ -356,6 +400,7 @@ document.getElementById('inp-destino').addEventListener('input',function(){
 const nc=normCity(this.value);
 const found=DISTANCIAS[nc]!==undefined;
 document.getElementById('km-manual-wrap').style.display=(!found&&this.value.length>2)?'block':'none';
+actualizarPanelDespachoStgo();
 });
 
 // ============ REGION SELECT ============
@@ -394,11 +439,35 @@ else retiroCost=RETIRO_NORMAL*proveedores;
 document.getElementById('desglose-wrap').style.display='none';
 document.getElementById('btn-desglose').textContent='Ver desglose';
 
+// Caso 1: retiro urgente + RM → $200.000 fijo
 if(retiroOn && urgente && isRM){
 const tbl=document.getElementById('tbl-logistica');
 tbl.innerHTML='';
 addRow(tbl,'Retiro urgente',fmt(retiroCost));
 setTotales(retiroCost);
+document.getElementById('res-logistica').classList.add('show');
+return;
+}
+
+// Caso 2: retiro no-urgente + RM → (50k×n) + 50k despacho RM fijo
+if(retiroOn && !urgente && isRM){
+const tbl=document.getElementById('tbl-logistica');
+tbl.innerHTML='';
+const totalRM=retiroCost+50000;
+addRow(tbl,proveedores+' proveedor'+(proveedores>1?'es':'')+' × $50.000',fmt(retiroCost));
+addRow(tbl,'Despacho dentro de RM (fijo)',fmt(50000));
+setTotales(totalRM);
+document.getElementById('res-logistica').classList.add('show');
+return;
+}
+
+// Caso 3: sin retiro + RM + despacho urgente → $200.000 fijo
+const despUrgenteRM=!retiroOn && isRM && getToggle('tg-desp-urgente')===1;
+if(despUrgenteRM){
+const tbl=document.getElementById('tbl-logistica');
+tbl.innerHTML='';
+addRow(tbl,'Despacho urgente Santiago',fmt(200000));
+setTotales(200000);
 document.getElementById('res-logistica').classList.add('show');
 return;
 }
