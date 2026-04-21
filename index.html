@@ -318,6 +318,68 @@ const ALOJ=42050, SUELDO=50420, VIATICO=30000, VIATICO_V5=10000;
 const RETIRO_URGENTE=200000, RETIRO_NORMAL=50000;
 const DIESEL=1309, RENDIMIENTO=5.5;
 
+// Coordenadas conocidas (para OSRM sin rebuscar en Nominatim)
+const COORDS={
+"belloto":[-71.4833,-33.0500],"quilpue":[-71.4500,-33.0500],"villa alemana":[-71.3700,-33.0400],
+"valparaiso":[-71.6167,-33.0458],"viña del mar":[-71.5500,-33.0244],"vina del mar":[-71.5500,-33.0244],
+"quillota":[-71.2500,-32.8800],"la calera":[-71.2000,-32.7900],"los andes":[-70.5978,-32.8339],
+"san felipe":[-70.7247,-32.7500],"san antonio":[-71.6072,-33.5928],"casablanca":[-71.4189,-33.3172],
+"santiago":[-70.6483,-33.4569],"maipu":[-70.7581,-33.5116],"puente alto":[-70.5757,-33.6116],
+"san bernardo":[-70.6989,-33.5928],"quilicura":[-70.7500,-33.3700],"las condes":[-70.5326,-33.4172],
+"providencia":[-70.6100,-33.4317],"nunoa":[-70.5981,-33.4567],"la florida":[-70.5878,-33.5233],
+"rancagua":[-70.7408,-34.1703],"san fernando":[-70.9861,-34.5856],"santa cruz":[-71.3639,-34.6381],
+"talca":[-71.6675,-35.4264],"curico":[-71.2417,-34.9814],"linares":[-71.5961,-35.8461],
+"chillan":[-72.1194,-36.6067],"concepcion":[-73.0572,-36.8201],"los angeles":[-72.3528,-37.4697],
+"temuco":[-72.5898,-38.7359],"valdivia":[-73.2458,-39.8142],"osorno":[-73.1333,-40.5731],
+"puerto montt":[-72.9367,-41.4693],"castro":[-73.7617,-42.4814],"coyhaique":[-72.0667,-45.5714],
+"punta arenas":[-70.9167,-53.1500],"arica":[-70.3333,-18.4833],"iquique":[-70.1500,-20.2167],
+"antofagasta":[-70.3997,-23.6500],"calama":[-68.9167,-22.4500],"copiapo":[-70.3333,-27.3667],
+"la serena":[-71.2500,-29.9000],"coquimbo":[-71.3500,-29.9667],"ovalle":[-71.2000,-30.6000],
+"angol":[-72.7081,-37.7956],"victoria":[-72.3333,-38.2167],"pucon":[-71.9667,-39.2833],
+"villarrica":[-72.2333,-39.2833],"panguipulli":[-72.3333,-39.6333]
+};
+
+const _distCache={}, _geocodeCache={};
+
+async function geocodeCity(city){
+const key=normCity(city);
+if(COORDS[key]) return COORDS[key];
+if(_geocodeCache[key]) return _geocodeCache[key];
+try{
+const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city+', Chile')}&format=json&limit=1&countrycodes=cl`;
+const res=await fetch(url,{headers:{'Accept':'application/json'}});
+const data=await res.json();
+if(data && data.length>0){
+const coord=[parseFloat(data[0].lon),parseFloat(data[0].lat)];
+_geocodeCache[key]=coord;
+COORDS[key]=coord;
+return coord;
+}
+}catch(e){console.warn('Geocoder error:',e);}
+return null;
+}
+
+async function getDistanciaOSRM(orig,dest){
+const a=normCity(orig),b=normCity(dest);
+const k=a+"-"+b;
+if(_distCache[k]) return _distCache[k];
+if(_distCache[b+"-"+a]) return _distCache[b+"-"+a];
+let coordO=COORDS[a]||await geocodeCity(orig)||COORDS["belloto"];
+let coordD=COORDS[b]||await geocodeCity(dest);
+if(!coordD) return null;
+try{
+const url=`https://router.project-osrm.org/route/v1/driving/${coordO[0]},${coordO[1]};${coordD[0]},${coordD[1]}?overview=false`;
+const res=await fetch(url);
+const data=await res.json();
+if(data.code==="Ok" && data.routes && data.routes[0]){
+const km=Math.round(data.routes[0].distance/1000);
+_distCache[k]=km;
+return km;
+}
+}catch(e){}
+return null;
+}
+
 // ============ HELPERS ============
 function normCity(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();}
 function fmt(n){return "$"+Math.round(n).toLocaleString("es-CL");}
@@ -395,11 +457,9 @@ out.sort((a,b)=>a.localeCompare(b,'es'));
 out.forEach(c=>{const o=document.createElement('option');o.value=c;dl.appendChild(o);});
 })();
 
-// Detect city not found
+// Al tipear: ocultar manual — calcLogistica decidirá si mostrarlo (después de OSRM)
 document.getElementById('inp-destino').addEventListener('input',function(){
-const nc=normCity(this.value);
-const found=DISTANCIAS[nc]!==undefined;
-document.getElementById('km-manual-wrap').style.display=(!found&&this.value.length>2)?'block':'none';
+document.getElementById('km-manual-wrap').style.display='none';
 actualizarPanelDespachoStgo();
 });
 
@@ -413,17 +473,27 @@ sel.addEventListener('change',calcTIC);
 })();
 
 // ============ CALC LOGISTICA ============
-function calcLogistica(){
+async function calcLogistica(){
 const retiroOn=getToggle('tg-retiro')===1;
 const urgente=getToggle('tg-urgencia')===1;
 const proveedores=Math.min(4,Math.max(1,parseInt(document.getElementById('inp-proveedores').value)||1));
 const destRaw=document.getElementById('inp-destino').value;
 const destNorm=normCity(destRaw);
 
-let distancia=DISTANCIAS[destNorm];
-if(distancia===undefined){
-distancia=parseFloat(document.getElementById('inp-km-manual').value);
-if(!distancia||distancia<=0){alert('Ingrese una ciudad valida o la distancia manual en km.');return;}
+// 1) Intentar OSRM + Nominatim para cualquier comuna
+// 2) Fallback: tabla local DISTANCIAS
+// 3) Fallback: distancia manual ingresada por el usuario
+let distancia=await getDistanciaOSRM("Belloto",destRaw);
+if(!distancia) distancia=DISTANCIAS[destNorm];
+if(!distancia){
+const manual=parseFloat(document.getElementById('inp-km-manual').value);
+if(manual && manual>0){
+distancia=manual;
+}else{
+document.getElementById('km-manual-wrap').style.display='block';
+alert('No se encontró esta ciudad automáticamente. Ingrese la distancia manualmente en km.');
+return;
+}
 }
 
 const isRM=RM.includes(destNorm);
